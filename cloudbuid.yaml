@@ -1,0 +1,8 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_AR_HOSTNAME}/${PROJECT_ID}/bigtools-multilang-ai:$COMMIT_SHA", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "${_AR_HOSTNAME}/${PROJECT_ID}/bigtools-multilang-ai:$COMMIT_SHA"]
+
+images:
+  - "${_AR_HOSTNAME}/${PROJECT_ID}/bigtools-multilang-ai:$COMMIT_SHA"

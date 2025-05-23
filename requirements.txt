@@ -1,0 +1,16 @@
+pandas~=2.2.3
+requests~=2.32.3
+python-dotenv~=1.0.1
+google-api-python-client~=2.164.0
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+Flask~=2.3.3
+gunicorn
+python-dateutil~=2.9.0.post0
+vertexai~=1.71.1
+google-cloud-aiplatform~=1.71.1
+fastapi
+uvicorn[standard]
+pydantic-settings
+urllib3
