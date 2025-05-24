@@ -1,6 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-<h2 class="text-xl font-semibold mb-4">Generation results</h2>
-<pre class="bg-gray-200 p-4 rounded text-xs overflow-x-auto">{{ results | tojson(indent=2) }}</pre>
-<a href="{{ url_for('index') }}" class="text-blue-600 underline mt-4 inline-block">&larr; back</a>
-{% endblock %}

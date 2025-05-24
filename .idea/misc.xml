@@ -3,4 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.11 (PSE_AI_Analizer)" />
   </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (Multi-Lang-Overrides-Ai)" project-jdk-type="Python SDK" />
 </project>
