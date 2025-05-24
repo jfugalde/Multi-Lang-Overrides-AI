@@ -96,7 +96,7 @@ class ProductOperations:
             if items:
                 return items[0]
             else:
-                logger.debug(f"No product found for SKU: {sku}") # Changed level to DEBUG
+                logger.debug(f"No product found for SKU: {sku}")
                 return {}
         except HTTPError as e:
             logger.error(f"Error fetching product by SKU '{sku}': {e}")
