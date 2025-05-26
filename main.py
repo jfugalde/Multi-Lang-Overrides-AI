@@ -1,6 +1,3 @@
-"""
-main.py – BigTools Multilang AI
-"""
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

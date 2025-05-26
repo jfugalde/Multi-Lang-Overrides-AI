@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Union
 import json
+import logging
 
 from src.queries.gql_multilang_queries import (
     get_product_query,
@@ -7,6 +8,7 @@ from src.queries.gql_multilang_queries import (
     get_delete_override_mutation
 )
 
+logger = logging.getLogger(__name__)
 
 class ProductLocalizationService:
     def __init__(self, client):
@@ -88,13 +90,13 @@ class ProductLocalizationService:
             "locale": locale
         }
 
-        print(f"[DEBUG] Locale={locale} | Sending mutation with payload:")
-        print(json.dumps(variables, indent=2, ensure_ascii=False))
+        logger.debug(f"[DEBUG] Locale={locale} | Sending mutation with payload:")
+        logger.debug(json.dumps(variables, indent=2, ensure_ascii=False))
 
         resp = self.client.graphql(mutation, variables=variables, admin=True, locale=locale)
 
-        print(f"[DEBUG] Response from GQL:")
-        print(json.dumps(resp, indent=2, ensure_ascii=False))
+        logger.debug(f"[DEBUG] Response from GQL:")
+        logger.debug(json.dumps(resp, indent=2, ensure_ascii=False))
 
         return resp
 
@@ -133,7 +135,13 @@ class ProductLocalizationService:
         """
         field_enum = ", ".join(fields_to_remove)
         mutation = get_delete_override_mutation(product_id, locale, field_enum, channel_id)
-        return self.client.graphql(mutation, admin=True, locale=locale)
+
+        resp = self.client.graphql(mutation, admin=True, locale=locale)
+
+        logger.debug(f"[DEBUG] Response from GQL:")
+        logger.debug(json.dumps(resp, indent=2, ensure_ascii=False))
+
+        return resp
 
     def delete_all_locales(
         self,

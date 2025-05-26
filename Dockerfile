@@ -1,6 +1,3 @@
-# ──────────────────────────────────────────────
-# Stage 0 – build a lean runtime layer
-# ──────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

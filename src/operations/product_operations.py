@@ -43,7 +43,7 @@ class ProductOperations:
     def create_bigcommerce_product(self, payload):
         """Creates a single product in BigCommerce."""
         try:
-            return  self.client.rest(method="POST",endpoint= "/catalog/products", data=payload)
+            return  self.client.rest(method="POST",endpoint= "/catalog/products", json=payload)
         except HTTPError as e:
             logger.error(f"Failed to create product via API. Payload: {payload}. Error: {e}")
             raise
@@ -78,7 +78,7 @@ class ProductOperations:
         """Assigns a product to a specific channel."""
         payload = [{"product_id": product_id, "channel_id": channel_id}]
         try:
-            self.client.rest(method="PUT",endpoint= "/catalog/products/channel-assignments", data=payload)
+            self.client.rest(method="PUT",endpoint= "/catalog/products/channel-assignments", json=payload)
             logger.debug(f"Assigned product {product_id} to channel {channel_id}")
         except HTTPError as e:
             logger.error(f"Failed to assign product {product_id} to channel {channel_id}: {e}")
@@ -88,7 +88,7 @@ class ProductOperations:
         """Updates a single product """
         endpoint = f"/catalog/products/{product_id}"
         try:
-            return  self.client.rest("PUT", endpoint, data=payload)
+            return  self.client.rest("PUT", endpoint, json=payload)
         except HTTPError as e:
             logger.error(f"Failed to update single product ID={product_id}. Payload: {payload}. Error: {e}")
             raise
@@ -102,7 +102,7 @@ class ProductOperations:
          ids_sample = [p.get('id', p.get('sku', '?')) for p in products_chunk[:3]]
          logger.debug(f"Sending batch update API call for {len(products_chunk)} products. Sample IDs/SKUs: {ids_sample}..")
          logger.info(f"Sending batch update API call for {len(products_chunk)} products.")
-         response_data =  self.client.rest(method="PUT", endpoint="/catalog/products", data=payload)
+         response_data =  self.client.rest(method="PUT", endpoint="/catalog/products", json=payload)
          logger.debug(f"Batch update API call successful for {len(products_chunk)} products.")
          return response_data
 
@@ -132,7 +132,7 @@ class ProductOperations:
         """Creates a new brand"""
         payload = {"name": brand_name, "is_visible": True}
         try:
-            data = self.client.rest("catalog/brands", method="POST", data=payload, use_v3=True)
+            data = self.client.rest("catalog/brands", method="POST", json=payload, use_v3=True)
             new_id = data.get("data", {}).get("id")
             if new_id:
                 logger.info(f"Created new brand '{brand_name}' with ID={new_id}")

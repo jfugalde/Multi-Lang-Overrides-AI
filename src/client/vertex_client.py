@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import html
 import logging
 import random
@@ -17,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 def _strip_html(raw: str) -> str:
         return BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)
-
 
 
 def _post_with_retries(
@@ -41,9 +38,6 @@ def _post_with_retries(
         time.sleep(sleep)
         return None
     return None
-
-
-
 
 def _build_generation_prompt(name: str, features: str, langs: List[str]) -> str:
     lang_list = ", ".join(langs)

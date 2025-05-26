@@ -37,7 +37,7 @@ class BigCommerceClient:
         "production": "https://api.bigcommerce.com/stores/{hash}",
         "staging":    "https://api.staging.zone/stores/{hash}",
         "integration": "https://api.integration.zone/stores/{hash}",
-        "sandbox":    "https://api.bigcommerce.com/stores/{hash}",
+        "sandbox":    "https://api.bigcommerce.com/stores/{hash}",#No need to keep updating production envs - reserved env
     }
 
     def __init__(
@@ -168,7 +168,9 @@ class BigCommerceClient:
         version = "v3" if use_v3 else "v2"
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
-        return self._request(method, endpoint, params=params, json=json, version=version)
+        resp = self._request(method, endpoint, params=params, json=json, version=version)
+        _LOG.debug("%s %s %s | %s", method, endpoint, version, resp)
+        return resp
 
     def make_request(self, method: str, endpoint: str, **kw):
         return self.rest(endpoint, method, **kw)
@@ -197,7 +199,7 @@ class BigCommerceClient:
 
         payload = {"query": query, "variables": variables or {}}
         req_id = uuid.uuid4().hex
-        _LOG.info("GraphQL → %s | id=%s", url, req_id)
+        _LOG.debug("GraphQL → %s | id=%s", url, req_id)
 
         try:
             resp = self.session.post(
