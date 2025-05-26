@@ -1,4 +1,3 @@
-# src/api/products.py
 from fastapi import APIRouter, Query
 from src.client.bc_client import BigCommerceClient
 from src.operations import product_operations

@@ -34,9 +34,8 @@ def _post_with_retries(
             resp.raise_for_status()
             return resp
 
-        # 429 → back-off
         if attempt == max_retries:
-            resp.raise_for_status()  # lanzará
+            resp.raise_for_status()
         sleep = base_backoff * (2**attempt) + random.random()
         logger.warning("Vertex 429 – retry %s in %.2fs", attempt + 1, sleep)
         time.sleep(sleep)
@@ -51,7 +50,7 @@ def _build_generation_prompt(name: str, features: str, langs: List[str]) -> str:
     return (
         "You are an expert e-commerce copywriter. For each language listed, "
         "return a block starting with `=== [LANG]` followed by an <h3> title "
-        "and a short HTML description (max 120 words).\n\n"
+        "and a short HTML description (max 240 words).\n\n"
         f"Languages: {lang_list}\n\n"
         f"Product name: {name}\nFeatures: {features}"
     )
@@ -60,16 +59,14 @@ def _build_generation_prompt(name: str, features: str, langs: List[str]) -> str:
 def _build_translation_prompt(name: str, html_desc: str, target: List[str]) -> str:
     langs = ", ".join(target)
     return (
-        "Translate the following product name and HTML description into: "
-        f"{langs}. Keep HTML tags intact. Each block must start with "
-        "`=== [LANG]`.\n\nProduct name: {name}\nDescription: {html_desc}"
+        f"Translate the following product name and HTML description into: {langs}. "
+        f"Keep HTML tags intact. Each block must start with `=== [LANG]`.\n\n"
+        f"Product name: {name}\nDescription: {html_desc}"
     )
 
 
 def _parse_vertex_output(text: str) -> Dict[str, Dict[str, str]]:
-    """Convert Vertex output blocks into {lang: {product_name, description}}."""
     out: Dict[str, Dict[str, str]] = {}
-    # split on '=== XX'
     parts = re.split(r"===\s*([A-Za-z]{2})\s*", text)
     it = iter(parts[1:])  # skip first empty
     for lang, block in zip(it, it):

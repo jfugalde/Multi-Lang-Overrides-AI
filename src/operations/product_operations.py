@@ -16,47 +16,8 @@ class ProductOperations:
     def __init__(self, client: BigCommerceClient):
         self.client = client
 
-    
-    def get_bigcommerce_brands(self):
-        """Fetches all brands from BigCommerce."""
-        all_brands = {}
-        page = 1
-        while True:
-            params = {"page": page, "limit": 250}
-            try:
-                data = self.client.rest("GET", "/catalog/brands", params=params)
-                brands = data.get("data", [])
-                if not brands:
-                    break
-                for b in brands:
-                    name_upper = b.get("name", "").strip().upper()
-                    if name_upper:
-                        all_brands[name_upper] = b.get("id")
-                page += 1
-            except HTTPError as e:
-                logger.error(f"Failed to fetch page {page} of brands: {e}")
-                break
-        logger.info(f"Fetched {len(all_brands)} brands from BigCommerce.")
-        return all_brands
-    
-    def create_brand_in_bigcommerce(self, brand_name):
-        """Creates a new brand in BigCommerce."""
-        payload = {"name": brand_name, "is_visible": True}
-        try:
-            data = self.client.rest("catalog/brands", method="POST", data=payload, use_v3=True)
-            new_id = data.get("data", {}).get("id")
-            if new_id:
-                logger.info(f"Created new brand '{brand_name}' with ID={new_id}")
-                return new_id
-            else:
-                logger.error(f"Failed to create brand '{brand_name}'. Response: {data}")
-                return None
-        except HTTPError as e:
-            logger.error(f"Error creating brand '{brand_name}': {e}")
-            return None
-    
     def get_bigcommerce_products(self, channel_id=BC_CHANNEL_ID):
-        """Fetches all products for a given channel from BigCommerce."""
+        """Fetches all products for a given channel"""
         products = []
         page = 1
         while True:
@@ -124,13 +85,13 @@ class ProductOperations:
 
 
     def update_single_product(self, product_id, payload):
-        """Updates a single product in BigCommerce."""
+        """Updates a single product """
         endpoint = f"/catalog/products/{product_id}"
         try:
             return  self.client.rest("PUT", endpoint, data=payload)
         except HTTPError as e:
             logger.error(f"Failed to update single product ID={product_id}. Payload: {payload}. Error: {e}")
-            raise # Re-raise for potential higher-level handling
+            raise
 
     def batch_update_products_api(self, products_chunk):
          """Sends a batch update request for multiple products."""
@@ -144,3 +105,41 @@ class ProductOperations:
          response_data =  self.client.rest(method="PUT", endpoint="/catalog/products", data=payload)
          logger.debug(f"Batch update API call successful for {len(products_chunk)} products.")
          return response_data
+
+    def get_bigcommerce_brands(self):
+        """Fetches all brands"""
+        all_brands = {}
+        page = 1
+        while True:
+            params = {"page": page, "limit": 250}
+            try:
+                data = self.client.rest("GET", "/catalog/brands", params=params)
+                brands = data.get("data", [])
+                if not brands:
+                    break
+                for b in brands:
+                    name_upper = b.get("name", "").strip().upper()
+                    if name_upper:
+                        all_brands[name_upper] = b.get("id")
+                page += 1
+            except HTTPError as e:
+                logger.error(f"Failed to fetch page {page} of brands: {e}")
+                break
+        logger.info(f"Fetched {len(all_brands)} brands from BigCommerce.")
+        return all_brands
+
+    def create_brand_in_bigcommerce(self, brand_name):
+        """Creates a new brand"""
+        payload = {"name": brand_name, "is_visible": True}
+        try:
+            data = self.client.rest("catalog/brands", method="POST", data=payload, use_v3=True)
+            new_id = data.get("data", {}).get("id")
+            if new_id:
+                logger.info(f"Created new brand '{brand_name}' with ID={new_id}")
+                return new_id
+            else:
+                logger.error(f"Failed to create brand '{brand_name}'. Response: {data}")
+                return None
+        except HTTPError as e:
+            logger.error(f"Error creating brand '{brand_name}': {e}")
+            return None
