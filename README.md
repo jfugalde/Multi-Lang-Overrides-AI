@@ -166,6 +166,9 @@ Deploy using `cloudbuild.yaml` for GCP Cloud Run or similar environments.
 - [ ] **Credential Flexibility**  
   Support dynamic credential loading (via UI or mounted config) to eliminate dependency on `.env` or hardcoded globals.
 
+- [ ] **Promt Flexibility**  
+  Support dynamic prompt update - empower merchants to have trailored descriptions for their products
+
 - [ ] **Add AI Translation for Non-Multigeo Stores**  
   Support bulk translation + override updates for stores that don’t use built-in BigCommerce multi-geo locale features.
 
