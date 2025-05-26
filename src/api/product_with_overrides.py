@@ -1,27 +1,14 @@
-# src/api/products_with_overrides.py
 from typing import List, Dict, Any
 from fastapi import APIRouter, Query
+
+from src.api.locales import active_locales
 from src.client.bc_client import BigCommerceClient
-from src.services.product_multilang_service import ProductLocalizationService
-from src.queries.gql_locale_queries import get_locales
-from src.services.query_processors import process_gql_locales
 from src.queries.gql_multilang_queries import get_product_query, get_update_mutation
 from src.config import settings
 
 router = APIRouter(tags=["overrides"])
 
-_bc  = BigCommerceClient(environment=settings.BC_ENV, debug=settings.DEBUG_MODE)
-_srv = ProductLocalizationService(_bc)
-
-
-def _active_locales(channel_id: int) -> List[str]:
-    q, v = get_locales(channel_id)
-    resp = _bc.graphql(q, variables=v, admin=True)
-    return [
-        loc for loc, meta in process_gql_locales(resp).items()
-        if meta.get("status") == "ACTIVE"
-    ]
-
+_bc = BigCommerceClient(environment=settings.BC_ENV)
 
 @router.get("/products-with-overrides")
 async def products_with_overrides(
@@ -39,7 +26,7 @@ async def products_with_overrides(
         ).get("data", [])
         product_ids = [p["id"] for p in base]
 
-    locales = _active_locales(channel_id)
+    locales = active_locales(channel_id)
     gql     = get_product_query()
     results: List[Dict[str, Any]] = []
 

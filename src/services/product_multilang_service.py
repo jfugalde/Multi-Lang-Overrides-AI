@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Union
+import json
 
 from src.queries.gql_multilang_queries import (
     get_product_query,
@@ -87,7 +88,15 @@ class ProductLocalizationService:
             "locale": locale
         }
 
-        return self.client.graphql(mutation, variables=variables, admin=True, locale=locale)
+        print(f"[DEBUG] Locale={locale} | Sending mutation with payload:")
+        print(json.dumps(variables, indent=2, ensure_ascii=False))
+
+        resp = self.client.graphql(mutation, variables=variables, admin=True, locale=locale)
+
+        print(f"[DEBUG] Response from GQL:")
+        print(json.dumps(resp, indent=2, ensure_ascii=False))
+
+        return resp
 
     def update_all_locales(
         self,

@@ -5,6 +5,7 @@ import logging
 import random
 import re
 import time
+from bs4 import BeautifulSoup
 from typing import Dict, List, Tuple, Optional
 
 import requests
@@ -15,13 +16,8 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 def _strip_html(raw: str) -> str:
-    """Remove tags to get a clean prompt; fallback if bs4 not available."""
-    try:
-        from bs4 import BeautifulSoup
-
         return BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)
-    except ModuleNotFoundError:
-        return re.sub(r"<[^>]+>", " ", raw)
+
 
 
 def _post_with_retries(
@@ -34,7 +30,6 @@ def _post_with_retries(
 ) -> Response:
     for attempt in range(max_retries + 1):
         resp = requests.post(url, headers=headers, json=payload, timeout=90)
-        # exit loop if not rate-limited
         if resp.status_code != 429:
             resp.raise_for_status()
             return resp

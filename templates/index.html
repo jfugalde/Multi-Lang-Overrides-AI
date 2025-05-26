@@ -7,146 +7,174 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     [x-cloak]{display:none}
-    /* 2‑line clamp for description preview */
     .clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   </style>
-  <!-- DOMPurify for safe HTML rendering -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.1/dist/purify.min.js"></script>
   <script>
-    /*************************
-     *  GLOBALS
-     *************************/
-    const PER_PAGE = 10;
-    let page       = 1;
-    let mode       = 'generate';  // generate | view | edit
-    let locales    = [];
 
-    const $ = sel => document.querySelector(sel);
-    const strip = html => { const d=document.createElement('div'); d.innerHTML=html; return d.textContent||d.innerText||''; };
-    const sanitize = html => DOMPurify.sanitize(html,{ALLOWED_TAGS:['b','i','em','strong','ul','ol','li','p','br','a'],ALLOWED_ATTR:['href','target']});
+const PER_PAGE   = 10;
+let   page       = 1;
+let   mode       = 'generate';
+let   locales    = [];
+const productsCache = {};
 
-    async function fetchJSON(url,opts={}){const r=await fetch(url,opts); if(!r.ok) throw new Error(await r.text()); return r.json();}
+const $     = sel => document.querySelector(sel);
+const strip = html=>new DOMParser().parseFromString(html,'text/html').body.textContent||'';
+const safe  = html=>DOMPurify.sanitize(html,{ALLOWED_TAGS:['b','i','em','strong','ul','ol','li','p','br','a'],ALLOWED_ATTR:['href','target']});
+async function fetchJSON(url,opts={}){const r=await fetch(url,opts);if(!r.ok)throw new Error(await r.text());return r.json();}
 
-    /*************************
-     *  LOCALES
-     *************************/
-    async function loadLocales(){
-      try{
-        locales = await fetchJSON('/api/locales');
-        const box = $('#locale-box');
-        box.innerHTML='';
-        locales.forEach(lc=>box.insertAdjacentHTML('beforeend',`
-          <label class="inline-flex items-center text-sm mr-4 mb-1">
-            <input type="checkbox" name="locale" value="${lc}" checked class="mr-1 h-4 w-4 text-indigo-600">${lc}
-          </label>`));
-      }catch(e){console.error(e); $('#locale-box').innerHTML='<span class="text-red-600 text-sm">Locales failed</span>';}
-    }
 
-    /*************************
-     *  PRODUCTS TABLE
-     *************************/
-    async function loadProducts(n=1){
-      page=n; const tb=$('#products'); tb.innerHTML='<tr><td colspan="4" class="p-4 text-center text-gray-500">Loading…</td></tr>';
-      try{
-        const data=await fetchJSON(`/api/products?limit=${PER_PAGE}&page=${page}`);
-        tb.innerHTML='';
-        data.forEach(p=>{
-          const preview = strip(p.description||'');
-          const short   = preview.length>120?preview.slice(0,117)+'…':preview;
-          tb.insertAdjacentHTML('beforeend',`
-            <tr class="border-t hover:bg-slate-50">
-              <td class="p-2 text-center"><input type="checkbox" class="prod" value="${p.id}"></td>
-              <td class="p-2 font-mono text-xs">${p.id}</td>
-              <td class="p-2 truncate max-w-[220px]">${p.name}</td>
-              <td class="p-2 text-xs clamp-2 max-w-[320px]">${short}</td>
-            </tr>`);
-        });
-        $('#cur').textContent=page;
-      }catch(e){tb.innerHTML=`<tr><td colspan="4" class="p-4 text-red-600">${e.message}</td></tr>`;}
-    }
-    const prev=()=>page>1&&loadProducts(page-1);
-    const next=()=>loadProducts(page+1);
+async function loadLocales(){
+  try{
+    locales = await fetchJSON('/api/locales');
+    const box = $('#locale-box');
+    box.innerHTML='';
+    locales.forEach(lc=>box.insertAdjacentHTML('beforeend',`
+      <label class="inline-flex items-center text-sm mr-4 mb-1">
+        <input type="checkbox" name="locale" value="${lc}" checked class="mr-1 h-4 w-4 text-indigo-600">${lc}
+      </label>`));
+     box.removeAttribute('x-cloak');
+  }catch(e){
+    console.error(e);
+    $('#locale-box').innerHTML =
+      '<span class="text-red-600 text-sm">Locales failed</span>';
+   $('#locale-box').removeAttribute('x-cloak');
+  }
+}
 
-    /*************************
-     *  MODAL
-     *************************/
-    const showModal=html=>{$('#mbody').innerHTML=html; $('#modal').classList.remove('hidden');};
-    const closeModal=()=>$('#modal').classList.add('hidden');
+async function loadProducts(n=1){
+  page=n;
 
-    /*************************
-     *  ACTIONS
-     *************************/
-    async function run(ev){
-      ev.preventDefault();
-      const ids=[...document.querySelectorAll('.prod:checked')].map(e=>+e.value);
-      if(!ids.length) return alert('Select at least one product');
-      const selLocales=[...document.querySelectorAll('input[name="locale"]:checked')].map(e=>e.value);
+  if(productsCache[page]){ renderProducts(productsCache[page]); return; }
 
-      if(mode==='generate'){
-        showModal('Generating…');
-        try{
-          const res=await fetchJSON('/api/generate-overrides',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ids,base_language:'en',target_locales:selLocales})});
-          showModal(`<pre class="whitespace-pre-wrap text-xs">${JSON.stringify(res,null,2)}</pre>`);
-        }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}return;
-      }
+  const tb=$('#products');
+  tb.innerHTML='<tr><td colspan="4" class="p-4 text-center text-gray-500">Loading…</td></tr>';
 
-      if(mode==='view'){
-        showModal('Loading overrides…');
-        try{
-          const data=await fetchJSON(`/api/products-with-overrides?ids=${ids.join(',')}`);
-          const html=data.map(p=>`
-            <details class="mb-3 border rounded">
-              <summary class="cursor-pointer p-2 bg-indigo-50">${p.name} (#${p.id})</summary>
-              <table class="w-full text-xs">
-                <thead class="bg-slate-100"><tr><th class="p-1 w-20">Locale</th><th class="p-1">Name</th><th class="p-1">Description</th></tr></thead>
-                <tbody>
-                  ${p.overrides.map(o=>`<tr class="border-t">
-                    <td class="p-1 font-mono">${o.locale}</td>
-                    <td class="p-1">${o.name}</td>
-                    <td class="p-1">${sanitize(o.description||'')}</td>
-                  </tr>`).join('')}
-                </tbody>
-              </table>
-            </details>`).join('');
-          showModal(html||'No overrides');
-        }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}return;
-      }
+  try{
+    const data=await fetchJSON(`/api/products?limit=${PER_PAGE}&page=${page}`);
+    productsCache[page]=data;
+    renderProducts(data);
+  }catch(e){
+    tb.innerHTML=`<tr><td colspan="4" class="p-4 text-red-600">${e.message}</td></tr>`;
+  }
+}
+function renderProducts(list){
+  const tb=$('#products'); tb.innerHTML='';
+  list.forEach(p=>{
+    const preview=strip(p.description||'');
+    const short  = preview.length>120?preview.slice(0,117)+'…':preview;
+    tb.insertAdjacentHTML('beforeend',`
+      <tr class="border-t hover:bg-slate-50">
+        <td class="p-2 text-center"><input type="checkbox" class="prod" value="${p.id}"></td>
+        <td class="p-2 font-mono text-xs">${p.id}</td>
+        <td class="p-2 truncate max-w-[220px]">${p.name}</td>
+        <td class="p-2 text-xs clamp-2 max-w-[320px]">${short}</td>
+      </tr>`);
+  });
+  $('#cur').textContent=page;
+}
+const prev=()=>{ if(page>1) loadProducts(page-1); };
+const next=()=>loadProducts(page+1);
 
-      if(mode==='edit'){
-        if(ids.length!==1) return alert('Select exactly 1 product to edit');
-        const pid=ids[0];
-        showModal('Fetching product…');
-        try{
-          const [prod]=await fetchJSON(`/api/products-with-overrides?ids=${pid}`);
-          const form=prod.overrides.map(o=>`
-            <div class="mb-4">
-              <h4 class="font-semibold mb-1">${o.locale.toUpperCase()}</h4>
-              <input class="border p-1 w-full mb-1" data-loc="${o.locale}" data-f="name" value="${o.name.replace(/'/g,'&#039;')}">
-              <textarea class="border p-1 w-full text-xs h-24" data-loc="${o.locale}" data-f="description">${o.description.replace(/'/g,'&#039;')}</textarea>
-            </div>`).join('');
-          showModal(`<h3 class="font-bold mb-2">Edit Product #${pid}</h3>${form}<button class="mt-2 px-4 py-2 bg-emerald-600 text-white rounded" onclick="save(${pid})">Save</button>`);
-        }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}return;
-      }
-    }
+const showModal = html=>{ $('#mbody').innerHTML=html; $('#modal').classList.remove('hidden'); };
+const closeModal= ()=> $('#modal').classList.add('hidden');
 
-    async function save(pid){
-      const payload={};
-      [...document.querySelectorAll('#mbody [data-loc]')].forEach(el=>{
-        const loc=el.dataset.loc,f=el.dataset.f; payload[loc]=payload[loc]||{}; payload[loc][f]=el.value;});
-      showModal('Saving…');
-      try{
-        const out=await fetchJSON('/api/update-basic-info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:pid,locales:payload})});
-        showModal(`<pre class="text-xs">${JSON.stringify(out,null,2)}</pre>`);
-      }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);} }
 
-    /*************************
-     *  NAVIGATION
-     *************************/
-    function setMode(m){mode=m; document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('bg-indigo-600',b.dataset.tab===m)); $('#title').textContent=m==='generate'?'Generate Overrides':m==='view'?'View Overrides':'Manual Edit Override'; loadProducts(1);}
+async function run(ev){
+  ev.preventDefault();
+  const ids=[...document.querySelectorAll('.prod:checked')].map(e=>+e.value);
+  if(!ids.length) return alert('Select at least one product');
+  const selLocales=[...document.querySelectorAll('input[name="locale"]:checked')].map(e=>e.value);
 
-    window.addEventListener('DOMContentLoaded',()=>{loadLocales(); loadProducts();});
+  /* ------- Generate ------- */
+  if(mode==='generate'){
+    showModal('Generating…');
+    try{
+      const res=await fetchJSON('/api/generate-overrides',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ids,base_language:'en',target_locales:selLocales})
+      });
+      showModal(`<pre class="whitespace-pre-wrap text-xs">${JSON.stringify(res,null,2)}</pre>`);
+    }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}
+    return;
+  }
+
+  if(mode==='view'){
+    showModal('Loading overrides…');
+    try{
+      const data=await fetchJSON(`/api/products-with-overrides?ids=${ids.join(',')}`);
+      const html=data.map(p=>`
+        <details class="mb-3 border rounded">
+          <summary class="cursor-pointer p-2 bg-indigo-50">${p.name} (#${p.id})</summary>
+          <table class="w-full text-xs">
+            <thead class="bg-slate-100">
+              <tr><th class="p-1 w-20">Locale</th><th class="p-1">Name</th><th class="p-1">Description</th></tr>
+            </thead>
+            <tbody>
+              ${p.overrides.map(o=>`<tr class="border-t">
+                  <td class="p-1 font-mono">${o.locale}</td>
+                  <td class="p-1">${o.name}</td>
+                  <td class="p-1">${safe(o.description||'')}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </details>`).join('');
+      showModal(html||'No overrides');
+    }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}
+    return;
+  }
+
+  if(mode==='edit'){
+    if(ids.length!==1) return alert('Select exactly 1 product to edit');
+    const pid=ids[0];
+    showModal('Fetching product…');
+    try{
+      const [prod]=await fetchJSON(`/api/products-with-overrides?ids=${pid}`);
+      const form=prod.overrides.map(o=>`
+        <div class="mb-4">
+          <h4 class="font-semibold mb-1">${o.locale.toUpperCase()}</h4>
+          <input   class="border p-1 w-full mb-1" data-loc="${o.locale}" data-f="name" value="${o.name.replace(/'/g,'&#039;')}">
+          <textarea class="border p-1 w-full text-xs h-24" data-loc="${o.locale}" data-f="description">${o.description.replace(/'/g,'&#039;')}</textarea>
+        </div>`).join('');
+      showModal(`<h3 class="font-bold mb-2">Edit Product #${pid}</h3>${form}
+                 <button class="mt-2 px-4 py-2 bg-emerald-600 text-white rounded" onclick="save(${pid})">Save</button>`);
+    }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}
+  }
+}
+async function save(pid){
+  const payload={};
+  [...document.querySelectorAll('#mbody [data-loc]')].forEach(el=>{
+    const loc=el.dataset.loc, f=el.dataset.f;
+    payload[loc]=payload[loc]||{}; payload[loc][f]=el.value;
+  });
+  showModal('Saving…');
+  try{
+    const out=await fetchJSON('/api/update-basic-info',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({product_id:pid,locales:payload})});
+    showModal(`<pre class="text-xs">${JSON.stringify(out,null,2)}</pre>`);
+    productsCache[page]=null;          // force refresh next time
+  }catch(e){showModal(`<span class="text-red-600">${e.message}</span>`);}
+}
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('[data-tab]').forEach(b=>{
+    b.classList.toggle('bg-indigo-600',b.dataset.tab===m);
+    b.classList.toggle('text-white',   b.dataset.tab===m);
+    b.classList.toggle('bg-gray-200',  b.dataset.tab!==m);
+  });
+  $('#title').textContent=
+    m==='generate'?'Generate Overrides':
+    m==='view'    ?'View Overrides'    :
+                   'Manual Edit Override';
+  // keep current table; do not reload
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  loadLocales();
+  loadProducts();
+});
   </script>
 </head>
 <body class="bg-slate-100 min-h-screen py-8 px-4">
@@ -162,11 +190,16 @@
     <h2 id="title" class="text-xl font-semibold text-gray-700 mb-4">Generate Overrides</h2>
 
     <form onsubmit="run(event)">
-      <div class="mb-5"><span class="font-semibold mr-2">Locales:</span><span id="locale-box" x-cloak"></span></div>
+      <div class="mb-5">
+        <span class="font-semibold mr-2">Locales:</span>
+        <span id="locale-box" x-cloak></span>
+      </div>
 
       <div class="overflow-x-auto border rounded">
         <table class="w-full text-sm">
-          <thead class="bg-indigo-50"><tr><th class="p-2"></th><th class="p-2 text-left">ID</th><th class="p-2 text-left">Name</th><th class="p-2 text-left">Description (preview)</th></tr></thead>
+          <thead class="bg-indigo-50">
+            <tr><th class="p-2"></th><th class="p-2 text-left">ID</th><th class="p-2 text-left">Name</th><th class="p-2 text-left">Description (preview)</th></tr>
+          </thead>
           <tbody id="products"></tbody>
         </table>
       </div>
@@ -182,10 +215,12 @@
     </form>
   </div>
 
-  <!-- MODAL -->
   <div id="modal" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" onclick="closeModal()">
     <div onclick="event.stopPropagation()" class="bg-white w-full max-w-2xl mx-4 p-6 rounded-xl">
-      <div class="flex justify-between items-center mb-3"><h3 class="font-semibold text-lg">Response</h3><button onclick="closeModal()">✕</button></div>
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-semibold text-lg">Response</h3>
+        <button onclick="closeModal()">✕</button>
+      </div>
       <div id="mbody" class="text-sm max-h-[70vh] overflow-y-auto"></div>
     </div>
   </div>
