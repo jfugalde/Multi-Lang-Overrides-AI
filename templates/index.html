@@ -77,7 +77,9 @@ const prev=()=>{ if(page>1) loadProducts(page-1); };
 const next=()=>loadProducts(page+1);
 
 const showModal = html=>{ $('#mbody').innerHTML=html; $('#modal').classList.remove('hidden'); };
-const closeModal= ()=> $('#modal').classList.add('hidden');
+const closeModal= ()=> {
+  $('#modal').classList.add('hidden');
+  $('#mbody').innerHTML = '';}
 
 function formatOverrides(result) {
   if (!result || !result.results) return "<p>No data returned</p>";
@@ -179,7 +181,9 @@ async function run(ev){
         <div class="mb-4">
           <h4 class="font-semibold mb-1">${o.locale.toUpperCase()}</h4>
           <input   class="border p-1 w-full mb-1" data-loc="${o.locale}" data-f="name" value="${o.name.replace(/'/g,'&#039;')}">
-          <textarea class="border p-1 w-full text-xs h-24" data-loc="${o.locale}" data-f="description">${o.description.replace(/'/g,'&#039;')}</textarea>
+<textarea data-loc="${o.locale}" data-f="description"
+  style="display:block;width:100%;min-height:200px;padding:12px;font-size:14px;resize:vertical;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;margin-top:4px;"
+>${o.description.replace(/'/g,'&#039;')}</textarea>
         </div>`).join('');
       showModal(`<h3 class="font-bold mb-2">Edit Product #${pid}</h3>${form}
                  <button class="mt-2 px-4 py-2 bg-emerald-600 text-white rounded" onclick="save(${pid})">Save</button>`);
