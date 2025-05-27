@@ -55,6 +55,8 @@ class BigCommerceClient:
         self.client_id: str = _load_from_settings("CLIENT_ID")
         self.client_secret: str = _load_from_settings("CLIENT_SECRET")
         self.channel_id: int = int(_load_from_settings("BC_CHANNEL_ID", 1))
+        self._cached_customer_token: Optional[str] = None
+        self._token_expires_at: Optional[datetime] = None
 
         if not self.store_hash or not self.access_token:
             raise ValueError("BC_STORE_HASH y BC_ACCESS_TOKEN son obligatorios")
@@ -91,14 +93,27 @@ class BigCommerceClient:
         _LOG.debug("BC client init → base_url=%s", self.base_url)
 
     def _customer_token(self) -> Optional[str]:
+        now = datetime.now(timezone.utc)
+        if self._cached_customer_token and self._token_expires_at and now < self._token_expires_at:
+            return self._cached_customer_token
+
         endpoint = "/storefront/api-token"
-        expires_at = int((datetime.now(timezone.utc) + timedelta(days=1)).timestamp())
-        payload = {"channel_id": self.channel_id, "expires_at": expires_at}
+        expires_at = now + timedelta(hours=23)
+        self._token_expires_at = expires_at
+
+        payload = {
+            "channel_id": self.channel_id,
+            "expires_at": int(expires_at.timestamp())
+        }
 
         data = self._request("POST", endpoint, json=payload)
         token = (data or {}).get("data", {}).get("token")
-        if not token:
+
+        if token:
+            self._cached_customer_token = token
+        else:
             _LOG.error("No JWT received (payload=%s)", _summarize(data))
+
         return token
 
     def _request(
