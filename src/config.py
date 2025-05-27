@@ -13,7 +13,7 @@ class _Settings(BaseSettings):
 
     VERTEX_API_KEY: str
     VERTEX_MODEL_ID: str
-    DEBUG_MODE: bool = False
+    DEBUG_MODE: bool = True
     BASE_DIR: ClassVar[Path] = Path(__file__).resolve().parent.parent
 
     model_config = SettingsConfigDict(

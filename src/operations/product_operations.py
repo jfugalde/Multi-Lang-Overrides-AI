@@ -1,16 +1,16 @@
 import os
-import logging
 from requests import HTTPError
-
+from src.utils.logger import setup_logging
 from src.client.bc_client import BigCommerceClient
 
 try:
-    from src.config import BC_CHANNEL_ID
+    from src.config import BC_CHANNEL_ID, settings
+
     CONFIG_IMPORTED = True
 except ImportError:
     BC_CHANNEL_ID = os.getenv("BC_CHANNEL_ID")
 
-logger = logging.getLogger(__name__)
+_LOG = setup_logging(__name__)
 
 class ProductOperations:
     def __init__(self, client: BigCommerceClient):
@@ -35,9 +35,9 @@ class ProductOperations:
                 products.extend(items)
                 page += 1
             except HTTPError as e:
-                logger.error(f"Failed to fetch page {page} of products for channel {channel_id}: {e}")
+                _LOG.error(f"Failed to fetch page {page} of products for channel {channel_id}: {e}")
                 break
-        logger.info(f"Retrieved {len(products)} products from BigCommerce channel={channel_id}")
+        _LOG.info(f"Retrieved {len(products)} products from BigCommerce channel={channel_id}")
         return products
 
     def create_bigcommerce_product(self, payload):
@@ -45,7 +45,7 @@ class ProductOperations:
         try:
             return  self.client.rest(method="POST",endpoint= "/catalog/products", json=payload)
         except HTTPError as e:
-            logger.error(f"Failed to create product via API. Payload: {payload}. Error: {e}")
+            _LOG.error(f"Failed to create product via API. Payload: {payload}. Error: {e}")
             raise
 
     def bc_api_get_by_sku(self, sku: str) -> dict:
@@ -57,10 +57,10 @@ class ProductOperations:
             if items:
                 return items[0]
             else:
-                logger.debug(f"No product found for SKU: {sku}")
+                _LOG.debug(f"No product found for SKU: {sku}")
                 return {}
         except HTTPError as e:
-            logger.error(f"Error fetching product by SKU '{sku}': {e}")
+            _LOG.error(f"Error fetching product by SKU '{sku}': {e}")
             return {}
 
     def get_bc_product_images(self, product_id):
@@ -70,7 +70,7 @@ class ProductOperations:
             data =  self.client.rest("GET", endpoint)
             return data.get("data", [])
         except HTTPError as e:
-            logger.error(f"Failed to fetch images for product {product_id}: {e}")
+            _LOG.error(f"Failed to fetch images for product {product_id}: {e}")
             return []
 
 
@@ -79,9 +79,9 @@ class ProductOperations:
         payload = [{"product_id": product_id, "channel_id": channel_id}]
         try:
             self.client.rest(method="PUT",endpoint= "/catalog/products/channel-assignments", json=payload)
-            logger.debug(f"Assigned product {product_id} to channel {channel_id}")
+            _LOG.debug(f"Assigned product {product_id} to channel {channel_id}")
         except HTTPError as e:
-            logger.error(f"Failed to assign product {product_id} to channel {channel_id}: {e}")
+            _LOG.error(f"Failed to assign product {product_id} to channel {channel_id}: {e}")
 
 
     def update_single_product(self, product_id, payload):
@@ -90,20 +90,20 @@ class ProductOperations:
         try:
             return  self.client.rest("PUT", endpoint, json=payload)
         except HTTPError as e:
-            logger.error(f"Failed to update single product ID={product_id}. Payload: {payload}. Error: {e}")
+            _LOG.error(f"Failed to update single product ID={product_id}. Payload: {payload}. Error: {e}")
             raise
 
     def batch_update_products_api(self, products_chunk):
          """Sends a batch update request for multiple products."""
          if not products_chunk:
-             logger.info("No products to update in batch API call.")
+             _LOG.info("No products to update in batch API call.")
              return None
          payload = products_chunk
          ids_sample = [p.get('id', p.get('sku', '?')) for p in products_chunk[:3]]
-         logger.debug(f"Sending batch update API call for {len(products_chunk)} products. Sample IDs/SKUs: {ids_sample}..")
-         logger.info(f"Sending batch update API call for {len(products_chunk)} products.")
+         _LOG.debug(f"Sending batch update API call for {len(products_chunk)} products. Sample IDs/SKUs: {ids_sample}..")
+         _LOG.info(f"Sending batch update API call for {len(products_chunk)} products.")
          response_data =  self.client.rest(method="PUT", endpoint="/catalog/products", json=payload)
-         logger.debug(f"Batch update API call successful for {len(products_chunk)} products.")
+         _LOG.debug(f"Batch update API call successful for {len(products_chunk)} products.")
          return response_data
 
     def get_bigcommerce_brands(self):
@@ -123,9 +123,9 @@ class ProductOperations:
                         all_brands[name_upper] = b.get("id")
                 page += 1
             except HTTPError as e:
-                logger.error(f"Failed to fetch page {page} of brands: {e}")
+                _LOG.error(f"Failed to fetch page {page} of brands: {e}")
                 break
-        logger.info(f"Fetched {len(all_brands)} brands from BigCommerce.")
+        _LOG.info(f"Fetched {len(all_brands)} brands from BigCommerce.")
         return all_brands
 
     def create_brand_in_bigcommerce(self, brand_name):
@@ -135,11 +135,11 @@ class ProductOperations:
             data = self.client.rest("catalog/brands", method="POST", json=payload, use_v3=True)
             new_id = data.get("data", {}).get("id")
             if new_id:
-                logger.info(f"Created new brand '{brand_name}' with ID={new_id}")
+                _LOG.info(f"Created new brand '{brand_name}' with ID={new_id}")
                 return new_id
             else:
-                logger.error(f"Failed to create brand '{brand_name}'. Response: {data}")
+                _LOG.error(f"Failed to create brand '{brand_name}'. Response: {data}")
                 return None
         except HTTPError as e:
-            logger.error(f"Error creating brand '{brand_name}': {e}")
+            _LOG.error(f"Error creating brand '{brand_name}': {e}")
             return None

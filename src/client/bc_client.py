@@ -10,6 +10,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
+from src.utils.logger import setup_logging
+
+_LOG = setup_logging(__name__)
+
 
 def _load_from_settings(name: str, default: Any = None) -> Any:
     try:
@@ -26,9 +30,6 @@ def _summarize(obj: Union[Dict[str, Any], List[Any], Any]) -> Any:
         first_keys = list(obj.keys())[:5]
         return {k: obj[k] for k in first_keys}
     return obj
-
-
-_LOG = logging.getLogger(__name__)
 
 
 class BigCommerceClient:
@@ -163,11 +164,13 @@ class BigCommerceClient:
         *,
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
+        data=None,
         use_v3: bool = True,
     ) -> Union[Dict[str, Any], List[Any], None]:
         version = "v3" if use_v3 else "v2"
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
+        if data: json = {"data": data}
         resp = self._request(method, endpoint, params=params, json=json, version=version)
         _LOG.debug("%s %s %s | %s", method, endpoint, version, resp)
         return resp

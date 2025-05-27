@@ -1,5 +1,5 @@
 import html
-import logging
+
 import random
 import re
 import time
@@ -10,8 +10,9 @@ import requests
 from requests import Response
 
 from src.config import settings
+from src.utils.logger import setup_logging
 
-logger = logging.getLogger(__name__)
+_LOG = setup_logging()
 
 def _strip_html(raw: str) -> str:
         return BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)
@@ -34,7 +35,7 @@ def _post_with_retries(
         if attempt == max_retries:
             resp.raise_for_status()
         sleep = base_backoff * (2**attempt) + random.random()
-        logger.warning("Vertex 429 – retry %s in %.2fs", attempt + 1, sleep)
+        _LOG.warning("Vertex 429 – retry %s in %.2fs", attempt + 1, sleep)
         time.sleep(sleep)
         return None
     return None
@@ -82,7 +83,7 @@ def generate_multilingual_descriptions(
 ) -> Dict[str, Dict[str, str]] | Tuple[Dict[str, Dict[str, str]], Optional[str]]:
     if not settings.VERTEX_API_KEY or not settings.VERTEX_MODEL_ID:
         err = "missing_creds"
-        logger.error("Vertex creds missing")
+        _LOG.error("Vertex creds missing")
         return ({}, err) if return_error else {}
 
     languages = [input_language] + [l for l in target_languages if l != input_language]
@@ -110,7 +111,7 @@ def generate_multilingual_descriptions(
 
         if not text.strip():
             err = "empty_response"
-            logger.error("Vertex empty response pid=%s | raw=%s", product_id, data)
+            _LOG.error("Vertex empty response pid=%s | raw=%s", product_id, data)
             return ({}, err) if return_error else {}
 
         result = _parse_vertex_output(text)
@@ -118,5 +119,5 @@ def generate_multilingual_descriptions(
 
     except Exception as exc:
         err = str(exc)
-        logger.error("Vertex exception pid=%s → %s", product_id, err)
+        _LOG.error("Vertex exception pid=%s → %s", product_id, err)
         return ({}, err) if return_error else {}

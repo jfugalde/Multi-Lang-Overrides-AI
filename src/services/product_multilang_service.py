@@ -1,14 +1,14 @@
 from typing import Dict, Any, List, Union
 import json
-import logging
 
 from src.queries.gql_multilang_queries import (
     get_product_query,
     get_update_mutation,
     get_delete_override_mutation
 )
+from src.utils.logger import setup_logging
 
-logger = logging.getLogger(__name__)
+_LOG = setup_logging()
 
 class ProductLocalizationService:
     def __init__(self, client):
@@ -90,13 +90,13 @@ class ProductLocalizationService:
             "locale": locale
         }
 
-        logger.debug(f"[DEBUG] Locale={locale} | Sending mutation with payload:")
-        logger.debug(json.dumps(variables, indent=2, ensure_ascii=False))
+        _LOG.debug(f"[DEBUG] Locale={locale} | Sending mutation with payload:")
+        _LOG.debug(json.dumps(variables, indent=2, ensure_ascii=False))
 
         resp = self.client.graphql(mutation, variables=variables, admin=True, locale=locale)
 
-        logger.debug(f"[DEBUG] Response from GQL:")
-        logger.debug(json.dumps(resp, indent=2, ensure_ascii=False))
+        _LOG.debug(f"[DEBUG] Response from GQL:")
+        _LOG.debug(json.dumps(resp, indent=2, ensure_ascii=False))
 
         return resp
 
@@ -118,7 +118,8 @@ class ProductLocalizationService:
                 locale=locale,
                 channel_id=channel_id
             )
-            print(f"Update {locale}: {result}")
+            _LOG.debug(f"[DEBUG] Localized product: {locale}")
+            _LOG.debug(json.dumps(result, indent=2, ensure_ascii=False))
             results[locale] = result
         return results
 
@@ -138,8 +139,8 @@ class ProductLocalizationService:
 
         resp = self.client.graphql(mutation, admin=True, locale=locale)
 
-        logger.debug(f"[DEBUG] Response from GQL:")
-        logger.debug(json.dumps(resp, indent=2, ensure_ascii=False))
+        _LOG.debug(f"[DEBUG] Response from GQL:")
+        _LOG.debug(json.dumps(resp, indent=2, ensure_ascii=False))
 
         return resp
 
