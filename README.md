@@ -1,7 +1,6 @@
 # 🌍 Multi-Lang-Overrides-AI – BigCommerce Product Localization Tool
+A modular Python-based tool designed to **fetch, generate, translate, and update localized product data** in **BigCommerce** stores via GraphQL - based on this latest feature: [International Enhancements for Multi-Storefront](https://developer.bigcommerce.com/docs/store-operations/catalog/msf-international-enhancements/overview). Supports custom overrides for `name` and `description` (can be extended), integrates with **Vertex AI**, and is deployable via Docker or Cloud Build. Localization setup is only allowed when Catalyst is enabled  
 
-A modular Python-based tool designed to **fetch, generate, translate, and update localized product data** in **BigCommerce** stores via GraphQL - based on this latest feature: [International Enhancements for Multi-Storefront](https://developer.bigcommerce.com/docs/store-operations/catalog/msf-international-enhancements/overview). Supports custom overrides for `name` and `description` (can be extended), integrates with **Vertex AI**, and is deployable via Docker or Cloud Build.
-*Localization setup is only allowed when Catalyst is enabled
 ---
 
 ## 🚀 Features
@@ -59,11 +58,12 @@ export CLIENT_ID=your_client_id
 export CLIENT_SECRET=your_client_secret
 export BC_CHANNEL_ID=1700121
 export VERTEX_API_KEY=your_vertex_key
-export VERTEX_MODEL_ID=gemini-pro
+export VERTEX_MODEL_ID="gemini-1.5-flash-8b"
 ```
-
+Guide to issue [VERTEX_MODEL_ID](https://www.byteplus.com/en/topic/536737?title=how-to-get-api-key-for-vertex-ai-a-comprehensive-guide) in GCP  
+Recommended Model: "gemini-1.5-flash-8b" - cheapest and fastest 
 ---
-
+ 
 ## ▶️ Running Locally
 
 ### Run Main CLI - Server App
@@ -82,16 +82,19 @@ FastAPI provides a SWAGGER via `.../docs`
 
 **1. 	Action Buttons (Top-Level Controls)**  
 These buttons define the type of action to be performed on the selected products.
-![img.png](img.png)
+ - Generate Overrides - Uses AI to create a Description and a Product name in the translated version by using the default product information. If nothing exists, no worries, it will do magic for you
+ - View Overrides - Allows the user to view the overriden information of your products for a given locale
+ - Manual Edit Override - Allow the user to manually input an override for either product name or description  
+![img.png](img.png)    
 **2. Locale Checkbox Selectors**  
 Locales are dynamically populated based on the current channel defined in the .env file. You can select which locales will be affected by the action.
 ![img_1.png](img_1.png)  
 **3. Product List with Pagination**
-This section displays a paginated list of products. You can select one or multiple products from the list to apply the selected action.   
+This section displays a paginated list of products. You can select one or multiple products from the list to apply the selected action.     
 ![img_2.png](img_2.png)  
 
 **4. Run Action & Response Logs**  
-Once the action is triggered, this section displays the execution responses for each product/locale combination.
+Once the action is triggered, this section displays the execution responses for each product/locale combination.  
 ![img_3.png](img_3.png)
 
 ---
