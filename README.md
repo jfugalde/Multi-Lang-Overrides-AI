@@ -87,7 +87,7 @@ These buttons define the type of action to be performed on the selected products
  - Manual Edit Override - Allow the user to manually input an override for either product name or description  
 ![img.png](img.png)    
 **2. Locale Checkbox Selectors**  
-Locales are dynamically populated based on the current channel defined in the .env file. You can select which locales will be affected by the action.
+Locales are dynamically populated based on the current channel defined in the .env file. You can select which locales will be affected by the action.  
 ![img_1.png](img_1.png)  
 **3. Product List with Pagination**
 This section displays a paginated list of products. You can select one or multiple products from the list to apply the selected action.     
