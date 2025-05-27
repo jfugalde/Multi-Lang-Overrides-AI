@@ -86,17 +86,17 @@ These buttons define the type of action to be performed on the selected products
  - View Overrides - Allows the user to view the overriden information of your products for a given locale
  - Manual Edit Override - Allow the user to manually input an override for either product name or description  
 
-![img.png](img.png)    
+![img.png](readme_images/img.png)    
 **2. Locale Checkbox Selectors**  
 Locales are dynamically populated based on the current channel defined in the .env file. You can select which locales will be affected by the action.  
-![img_1.png](img_1.png)  
+![img_1.png](readme_images/img_1.png)  
 **3. Product List with Pagination**
 This section displays a paginated list of products. You can select one or multiple products from the list to apply the selected action.     
-![img_2.png](img_2.png)  
+![img_2.png](readme_images/img_2.png)  
 
 **4. Run Action & Response Logs**  
 Once the action is triggered, this section displays the execution responses for each product/locale combination.  
-![img_3.png](img_3.png)
+![img_3.png](readme_images/img_3.png)
 
 ---
 
